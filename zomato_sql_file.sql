@@ -1,48 +1,79 @@
-drop table if exists goldusers_signup;
-CREATE TABLE goldusers_signup(userid integer,gold_signup_date date); 
+SELECT * FROM goldusers_signup
+SELECT * FROM product
+SELECT * FROM sales
+SELECT * FROM users 
+     
+(Q1) What is the total amount each customer spent on zomato?
 
-INSERT INTO goldusers_signup(userid,gold_signup_date) 
- VALUES (1,'2017-09-22'),
-(3,'2017-04-21');
-
-drop table if exists users;
-CREATE TABLE users(userid integer,signup_date date); 
-
-INSERT INTO users(userid,signup_date) 
- VALUES (1,'2014-09-02'),
-(2,'2015-01-15'),
-(3,'2014-04-11');
-
-drop table if exists sales;
-CREATE TABLE sales(userid integer,created_date date,product_id integer); 
-
-INSERT INTO sales(userid,created_date,product_id) 
- VALUES (1,'2017-04-19',2),
-(3,'2019-12-18',1),
-(2,'2020-07-20',3),
-(1,'2019-10-23',2),
-(1,'2018-03-19',3),
-(3,'2016-12-20',2),
-(1,'2016-11-09',1),
-(1,'2016-05-20',3),
-(2,'2017-09-24',1),
-(1,'2017-03-11',2),
-(1,'2016-03-11',1),
-(3,'2016-11-10',1),
-(3,'2017-12-07',2),
-(3,'2016-12-15',2),
-(2,'2017-11-08',2),
-(2,'2018-09-10',3);
+SELECT sales.userid ,sum(product.price) AS total_expenditure_by_customer
+FROM sales
+INNER JOIN product 
+ON sales.product_id=product.product_id
+GROUP BY sales.userid
+ORDER BY sales.userid
 
 
-drop table if exists product;
-CREATE TABLE product(product_id integer,product_name text,price integer); 
+(Q2) How many days each customer visited zomato?
 
-INSERT INTO product(product_id,product_name,price) 
- VALUES
-(1,'p1',980),
-(2,'p2',870),
-(3,'p3',330);
+SELECT userid,count(created_date) AS number_of_days_customer_visited
+FROM sales
+GROUP BY sales.userid
+ORDER BY userid
+
+
+(Q3) What was the first product purchased by each customer?
+
+SELECT * FROM
+(SELECT *,RANK() OVER(PARTITION BY userid ORDER BY created_date) rank FROM sales) sales 
+WHERE rank=1
+
+(Q4) What is the most purchased on the menu and how many times was it purcgased by all customer?
+
+SELECT userid, count(product_id) from sales where product_id=
+(SELECT product_id
+FROM sales
+GROUP BY product_id
+ORDER BY COUNT(product_id) DESC LIMIT 1)
+GROUP BY userid
+
+(Q5) Which item was the most popular for each customer?
+select * from
+(select *,rank() over(partition by userid order by cnt desc) rnk from
+(select userid,product_id,count(product_id) cnt from sales group by userid,product_id)a)b
+where rnk=1
+(Q6) Which item was purchased first by the customer after they became a member?
+select * from
+(select c.*,rank() over(partition by userid order by created_date) rnk from
+ (select a.userid,a.created_date,a.product_id,b.gold_signup_date from sales a inner join
+ goldusers_signup b on a.userid=b.userid and created_date>=gold_signup_date)c) d
+ where rnk=1
+ (Q7) which item was purchased just before the customer became a member?
+ select * from
+(select c.*,rank() over(partition by userid order by created_date desc) rnk from
+ (select a.userid,a.created_date,a.product_id,b.gold_signup_date from sales a inner join
+ goldusers_signup b on a.userid=b.userid and created_date<=gold_signup_date)c) d
+ where rnk=1
+ (Q8) What is the total orders and amount spent for each member before they became a member?
+  select userid,count(created_date),sum(price) total_amt_spent from
+ (select c.*,d.price from
+ (select a.userid, a.created_date,a.product_id,b.gold_signup_date from sales a inner join
+  goldusers_signup b on a.userid=b.userid and created_date<=gold_signup_date) c inner join
+  product d on c.product_id=d.product_id)
+  e group by userid
+ (Q9) if buying each product points for eg 5rs=2 zomato points and each product has different purchasing points for eg for p1 5rs=1 zomato point , for p2 10rs=5 zomato point and p3 5rs=1 zomato point 
+       calculate points collected by each customer?
+	select userid,sum(total_points)*2.5 total_money_earned from
+	(select e.*,amt/points total_points from
+	(select d.*,case when product_id=1 then 5 when product_id=2 then 2 when product_id=3 then 5 else 0 end as points from 
+	(select c.userid,c.product_id,sum(price) amt from
+	(select a.*,b.price from sales a inner join product b on a.product_id=b.product_id)
+	 c group by userid,product_id)d)e)f group by userid
+	
+	
+(Q10) rank all the transaction of the customers?
+    select *,rank() over(partition by userid order by created_date) rank from sales
+	
+
 
 
 select * from sales;
