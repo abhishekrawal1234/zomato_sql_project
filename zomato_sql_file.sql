@@ -74,9 +74,3 @@ select * from
     select *,rank() over(partition by userid order by created_date) rank from sales
 	
 
-
-
-select * from sales;
-select * from product;
-select * from goldusers_signup;
-select * from users;
