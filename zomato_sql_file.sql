@@ -42,11 +42,13 @@ select * from
 (select userid,product_id,count(product_id) cnt from sales group by userid,product_id)a)b
 where rnk=1
 (Q6) Which item was purchased first by the customer after they became a member?
-select * from
-(select c.*,rank() over(partition by userid order by created_date) rnk from
- (select a.userid,a.created_date,a.product_id,b.gold_signup_date from sales a inner join
- goldusers_signup b on a.userid=b.userid and created_date>=gold_signup_date)c) d
- where rnk=1
+select userid,created_date,product_id,gold_signup_date
+from (select *, rank() over(partition by userid order by created_date) from
+(select a.userid,a.created_date,a.product_id,b.gold_signup_date from sales as a
+inner join gold_user as b
+on a.userid=b.user_id
+where a.created_date>=b.gold_signup_date) as a) as b
+where rank=1
  (Q7) which item was purchased just before the customer became a member?
  select * from
 (select c.*,rank() over(partition by userid order by created_date desc) rnk from
